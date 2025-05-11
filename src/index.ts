@@ -27,7 +27,7 @@ app.get('/get-weather', async (req: Request, res: Response) => {
     if (!query.location){
         throw new Error("")
     }
-    await fetchWeatherInfo(query);
+    // await fetchWeatherInfo(query);
 
 })
 
