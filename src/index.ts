@@ -2,6 +2,9 @@ import express, { NextFunction, Request, Response } from "express"
 import dotenv from "dotenv"
 import axios from "axios"
 import { globalErrorHandler } from "./utils/error.middleware";
+import { AppError } from "./utils/appError";
+import { asyncHandler } from "./utils/asyncHandler";
+import { urlValidationSchema, UrlValidatorType } from "./schema/urlValidator.schema";
 
 dotenv.config();
 
@@ -9,28 +12,26 @@ const app = express();
 
 app.use(express.json())
 
-interface UrlValidator {
-    location: string,
-    date1 ?: Date,
-    date2 ?: Date
-}
+const generateUrl = (obj: UrlValidatorType) => `https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/${obj.location}/${obj?.date1}/${obj?.date2}?key=${process.env.API_KEY}`;
 
-const generateUrl = (obj: UrlValidator) => `https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/${obj.location}/${obj?.date1}/${obj?.date2}?key=${process.env.API_KEY}`;
-
-const fetchWeatherInfo = async (obj: UrlValidator) => {
+const fetchWeatherInfo = async (obj: UrlValidatorType) => {
     const url = generateUrl(obj);
     const response = await axios.get(url);
-    return response
+    return response.data;
 }
 
-app.get('/get-weather', async (req: Request, res: Response) => {
-    const query = req.query;
-    if (!query.location){
-        throw new Error("")
-    }
-    // await fetchWeatherInfo(query);
+app.get('/get-weather', asyncHandler(async (req: Request, res: Response) => {
+    const result = urlValidationSchema.safeParse(req.query);
 
-})
+    if (!result.success){
+        const errMessages = result.error.errors.map(e => e.message).join(". ");
+        throw new AppError(400, `Invalid query parameters: ${errMessages}`);
+    }
+
+    const weatherForecast = await fetchWeatherInfo(result.data);
+    res.json(weatherForecast);
+
+}))
 
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
     globalErrorHandler(err, req, res, next);
