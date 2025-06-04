@@ -33,14 +33,9 @@ const fetchWeatherInfo = async (obj: UrlValidatorType) => {
 }
 
 app.get('/get-weather', asyncHandler(async (req: Request, res: Response) => {
-    const result = urlValidationSchema.safeParse(req.query);
+    const result = urlValidationSchema.parse(req.query);
 
-    if (!result.success){
-        const errMessages = result.error.errors.map(e => e.message).join(". ");
-        throw new AppError(400, `Invalid query parameters: ${errMessages}`);
-    }
-
-    const weatherForecast = await fetchWeatherInfo(result.data);
+    const weatherForecast = await fetchWeatherInfo(result);
     res.json(weatherForecast);
 
 }))

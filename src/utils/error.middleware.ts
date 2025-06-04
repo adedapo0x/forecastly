@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { AppError } from "./appError";
 import axios from "axios"
+import { z } from "zod";
 
 // Development error response
 const sendErrorDev = (err: AppError, res: Response) => {
@@ -14,7 +15,7 @@ const sendErrorDev = (err: AppError, res: Response) => {
 
 // Production error response
 const sendErrorProd = (err: AppError, res: Response) => {
-    // operational ie trusted or known error, send message to client
+    // operational i.e trusted or known error, send message to client
     if (err.isOperational){
         res.status(err.statusCode).json({
             status: "error",
@@ -52,6 +53,10 @@ export const globalErrorHandler = (
 
     if (err instanceof AppError){ // if this was an explicitly typed Exception that was thrown  
         error = err
+    } else if (err instanceof z.ZodError){
+        console.log(err)
+        const errMessages = err.errors.map(e => e.message).join(". ");
+        error = new AppError(400, `Invalid query parameters: ${errMessages}`);
     } else if (axios.isAxiosError(err)){
         console.log(err)
         error = new AppError(500, "Error occured while getting forecast", false);
@@ -59,6 +64,7 @@ export const globalErrorHandler = (
         console.log(err)
         error = new AppError(500, "An unexpected error occurred. Please try again later", false)
     }
+
 
     if (process.env.NODE_ENV === "development"){
         sendErrorDev(err, res);
