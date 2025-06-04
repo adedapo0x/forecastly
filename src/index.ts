@@ -12,7 +12,19 @@ const app = express();
 
 app.use(express.json())
 
-const generateUrl = (obj: UrlValidatorType) => `https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/${obj.location}/${obj?.date1}/${obj?.date2}?key=${process.env.API_KEY}`;
+const generateUrl = (obj: UrlValidatorType) => {
+    const baseUrl = `https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/${obj.location}`;
+    let body = "";
+    if (obj.date1) body += `/${obj.date1}`;
+
+    if (!obj.date1 && obj.date2){
+        throw new AppError(400, "Date 2 cannot be passed without date 1");
+    }
+
+    if (obj.date2) body += `/${obj?.date2}`;
+    const url = baseUrl + body + `/?key=${process.env.API_KEY}`;
+    return url;
+};
 
 const fetchWeatherInfo = async (obj: UrlValidatorType) => {
     const url = generateUrl(obj);
