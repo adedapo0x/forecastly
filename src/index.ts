@@ -1,5 +1,6 @@
 import express, { NextFunction, Request, Response } from "express"
 import dotenv from "dotenv"
+import Redis from "ioredis"
 import axios from "axios"
 import { globalErrorHandler } from "./utils/error.middleware";
 import { AppError } from "./utils/appError";
@@ -11,6 +12,21 @@ dotenv.config();
 const app = express();
 
 app.use(express.json())
+
+// Handling redis config, should be in a file of its own for larger applications
+let redisClient = new Redis({
+    host: process.env.REDIS_HOST || 'localhost',
+    port: parseInt(process.env.REDIS_PORT || '6379'),
+    password: process.env.REDIS_PASSWORD,
+    lazyConnect: true,
+    maxRetriesPerRequest: 3
+})
+
+redisClient.on('connect', () => console.log("Connected to Redis"));
+redisClient.on('error', (err) => console.error("Redis connection error: ", err));
+redisClient.on("ready", ()=>  console.log("Redis is ready to use"));
+
+
 
 const generateUrl = (obj: UrlValidatorType) => {
     const baseUrl = `https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/${obj.location}`;
