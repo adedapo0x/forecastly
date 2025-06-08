@@ -4,7 +4,7 @@ import Redis from "ioredis"
 import axios from "axios"
 import { globalErrorHandler } from "./utils/error.middleware";
 import { AppError } from "./utils/appError";
-import { asyncHandler } from "./utils/asyncHandler";
+import { expressHandler } from "./utils/expressErrorHandler";
 import { urlValidationSchema, UrlValidatorType } from "./schema/urlValidator.schema";
 
 dotenv.config();
@@ -20,7 +20,7 @@ let redisClient = new Redis({
     password: process.env.REDIS_PASSWORD,
     lazyConnect: true,
     maxRetriesPerRequest: 3
-})
+})  
 
 redisClient.on('connect', () => console.log("Connected to Redis"));
 redisClient.on('error', (err) => console.error("Redis connection error: ", err));
@@ -48,7 +48,7 @@ const fetchWeatherInfo = async (obj: UrlValidatorType) => {
     return response.data;
 }
 
-app.get('/get-weather', asyncHandler(async (req: Request, res: Response) => {
+app.get('/get-weather', expressHandler(async (req: Request, res: Response) => {
     const result = urlValidationSchema.parse(req.query);
 
     const weatherForecast = await fetchWeatherInfo(result);
